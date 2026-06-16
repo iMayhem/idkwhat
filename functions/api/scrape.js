@@ -379,9 +379,100 @@ async function tryOtherProviders(tmdbId, mediaType = "movie", season = 1, episod
             console.error("Other provider failed:", e);
         }
     });
-    
     await Promise.all(promises);
     return sources.length ? { sources } : null;
+}
+
+function jsHash(s) {
+    let t = 0;
+    for (let n = 0; n < s.length; n++) {
+        t = (t << 5) - t + s.charCodeAt(n);
+        t &= t;
+    }
+    return Math.abs(t).toString(16).padStart(8, "0");
+}
+
+async function tryCinemaOS(tmdbId, mediaType = "movie", season = 1, episode = 1) {
+    const secret = "dde0443a51aed264819df2c1292e678eacf0bbaff0ed279cce0b0f2094fcabe5";
+    const r = Math.floor(Date.now() / 60000);
+    const hashInput = `${tmdbId}:${r}:${secret}`;
+    const a = jsHash(hashInput);
+    const h = `${a}-${r.toString(36)}`;
+    
+    const urls = [];
+    
+    // cinemaosv2
+    let paramsV2 = `tmdbId=${tmdbId}&type=${mediaType}&h=${h}&_gt=2549b22d9bf0d91847a2811baac98d0079e02dba592aea94`;
+    if (mediaType === "tv") {
+        paramsV2 += `&season=${season}&episode=${episode}`;
+    }
+    urls.push({
+        url: `https://cinemaos.live/api/cinemaosv2?${paramsV2}`,
+        type: 'cinemaosv2'
+    });
+    
+    // multi-movies
+    let paramsMulti = `tmdbId=${tmdbId}&type=${mediaType}&h=${h}`;
+    if (mediaType === "tv") {
+        paramsMulti += `&season=${season}&episode=${episode}`;
+    }
+    urls.push({
+        url: `https://cinemaos.live/api/multi-movies?${paramsMulti}`,
+        type: 'multi-movies'
+    });
+    
+    const results = [];
+    const promises = urls.map(async ({ url, type }) => {
+        try {
+            const resp = await fetchWithTimeout(url, {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
+                    'Referer': `https://cinemaos.live/${mediaType}/watch/${tmdbId}`
+                }
+            }, 5000);
+            if (!resp.ok) return;
+            const text = await resp.text();
+            let j;
+            try {
+                j = JSON.parse(text);
+            } catch(e) {
+                return;
+            }
+            
+            if (type === 'cinemaosv2' && j.streams && Array.isArray(j.streams)) {
+                j.streams.forEach(s => {
+                    const sUrl = s.url || s.link;
+                    if (sUrl) {
+                        results.push({
+                            url: sUrl,
+                            title: s.name || "CinemaOS V2",
+                            quality: s.quality || "unknown",
+                            headers: s.headers || {}
+                        });
+                    }
+                });
+            } else if (type === 'multi-movies' && j.results && Array.isArray(j.results)) {
+                j.results.forEach(s => {
+                    const sUrl = s.link;
+                    if (sUrl) {
+                        const sourceName = s.source || "MultiMovies";
+                        const quality = s.quality || "HD";
+                        results.push({
+                            url: sUrl,
+                            title: `CinemaOS (${sourceName})`,
+                            quality: quality,
+                            headers: {}
+                        });
+                    }
+                });
+            }
+        } catch (e) {
+            console.error(`CinemaOS endpoint ${type} failed:`, e);
+        }
+    });
+    
+    await Promise.all(promises);
+    return results.length ? { sources: results } : null;
 }
 
 function extractLinks(data) {
@@ -453,7 +544,8 @@ async function scrapeMedia(tmdbId, mediaType = "movie", season = 1, episode = 1)
         tryMovish,
         tryVidNest,
         tryVidSrcFamily,
-        tryOtherProviders
+        tryOtherProviders,
+        tryCinemaOS
     ];
     
     const promises = providers.map(async (provider) => {

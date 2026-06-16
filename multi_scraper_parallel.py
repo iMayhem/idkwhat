@@ -1,5 +1,6 @@
 import urllib.request
 import urllib.error
+import urllib.parse
 import json
 import re
 import sys
@@ -297,6 +298,101 @@ def try_movish(tmdb_id, media_type="movie", season=1, episode=1):
         
     return None
 
+def try_cinemaos(tmdb_id, media_type="movie", season=1, episode=1):
+    secret = "dde0443a51aed264819df2c1292e678eacf0bbaff0ed279cce0b0f2094fcabe5"
+    r = int(time.time() / 60)
+    
+    # Generate hash
+    hash_input = f"{tmdb_id}:{r}:{secret}"
+    t = 0
+    for char in hash_input:
+        t = (t << 5) - t + ord(char)
+        t = (t & 0xFFFFFFFF)
+        if t >= 0x80000000:
+            t -= 0x100000000
+    a = hex(abs(t))[2:].zfill(8)
+    
+    # Base36 encode r
+    alphabet = "0123456789abcdefghijklmnopqrstuvwxyz"
+    base36 = ""
+    temp_r = r
+    while temp_r:
+        temp_r, i = divmod(temp_r, 36)
+        base36 = alphabet[i] + base36
+    b36_r = base36 or alphabet[0]
+    
+    h = f"{a}-{b36_r}"
+    print(f"[CinemaOS] Scraping TMDB {tmdb_id} with h={h}...")
+    
+    urls = []
+    # cinemaosv2
+    params_v2 = {
+        'tmdbId': tmdb_id,
+        'type': media_type,
+        'h': h,
+        '_gt': '2549b22d9bf0d91847a2811baac98d0079e02dba592aea94'
+    }
+    if media_type == "tv":
+        params_v2['season'] = season
+        params_v2['episode'] = episode
+    query_v2 = urllib.parse.urlencode(params_v2)
+    urls.append((f"https://cinemaos.live/api/cinemaosv2?{query_v2}", "cinemaosv2"))
+    
+    # multi-movies
+    params_multi = {
+        'tmdbId': tmdb_id,
+        'type': media_type,
+        'h': h
+    }
+    if media_type == "tv":
+        params_multi['season'] = season
+        params_multi['episode'] = episode
+    query_multi = urllib.parse.urlencode(params_multi)
+    urls.append((f"https://cinemaos.live/api/multi-movies?{query_multi}", "multi-movies"))
+    
+    merged_results = {"sources": []}
+    
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
+        'Referer': f'https://cinemaos.live/{media_type}/watch/{tmdb_id}'
+    }
+    
+    for url, endpoint_type in urls:
+        req = urllib.request.Request(url, headers=headers)
+        try:
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                data = resp.read().decode('utf-8')
+                j = json.loads(data)
+                if endpoint_type == "cinemaosv2" and "streams" in j:
+                    for s in j["streams"]:
+                        s_url = s.get("url") or s.get("link")
+                        if s_url:
+                            merged_results["sources"].append({
+                                "url": s_url,
+                                "title": s.get("name") or "CinemaOS V2",
+                                "quality": s.get("quality") or "unknown",
+                                "headers": s.get("headers") or {}
+                            })
+                elif endpoint_type == "multi-movies" and "results" in j:
+                    for s in j["results"]:
+                        s_url = s.get("link")
+                        if s_url:
+                            source_name = s.get("source") or "MultiMovies"
+                            quality = s.get("quality") or "HD"
+                            merged_results["sources"].append({
+                                "url": s_url,
+                                "title": f"CinemaOS ({source_name})",
+                                "quality": quality,
+                                "headers": {}
+                            })
+        except Exception as e:
+            print(f"  ❌ [CinemaOS] {endpoint_type} failed: {e}")
+            
+    if merged_results["sources"]:
+        print(f"  ✅ [CinemaOS] Found {len(merged_results['sources'])} streams")
+        return merged_results
+    return None
+
 def extract_links(data):
     links = []
     if isinstance(data, dict):
@@ -356,10 +452,10 @@ def scrape_media(tmdb_id, media_type="movie", season=1, episode=1):
     all_results = []
     
     # Run all providers in parallel to collect all links
-    with ThreadPoolExecutor(max_workers=5) as executor:
+    with ThreadPoolExecutor(max_workers=6) as executor:
         futures = {
             executor.submit(provider, tmdb_id, media_type, season, episode): provider
-            for provider in [try_peachify, try_movish, try_vidnest, try_vidsrc_family, try_other_providers]
+            for provider in [try_peachify, try_movish, try_vidnest, try_vidsrc_family, try_other_providers, try_cinemaos]
         }
         for fut in as_completed(futures):
             provider = futures[fut]

@@ -528,9 +528,20 @@ function extractLinks(data) {
                                val.toLowerCase().includes('/get') ||
                                ['hls', 'mp4', 'direct'].includes(data.type);
                 if (isStream) {
+                    let labelParts = [];
+                    if (data.title) labelParts.push(data.title);
+                    if (data.language) labelParts.push(data.language);
+                    if (data.quality) {
+                        let q = String(data.quality);
+                        if (!q.toLowerCase().endsWith('p')) q += 'p';
+                        labelParts.push(`[${q}]`);
+                    }
+                    let label = labelParts.join(' ');
+                    if (!label) label = 'unknown';
+                    
                     links.push({
                         url: val,
-                        label: data.quality || data.language || data.title || 'unknown',
+                        label: label,
                         headers: data.headers || {},
                         type: data.type || (val.toLowerCase().includes('m3u8') ? 'hls' : 'mp4')
                     });
