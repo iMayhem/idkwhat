@@ -92,55 +92,69 @@
             </div>
         </section>
 
-        <!-- Watch / Player Section -->
+        <!-- Watch / Player Section (Immersive Theater Mode) -->
         <section id="sec-watch" class="content-section hidden">
-            <div class="watch-container" style="display: flex; gap: 30px; flex-wrap: wrap; margin-top: 15px;">
-                <!-- Left: Native Video Player and Servers list -->
-                <div class="player-column" style="flex: 1; min-width: 350px;">
-                    <div class="player-screen" id="player-screen-area" style="background: #000; aspect-ratio: 16/9; display: flex; justify-content: center; align-items: center; border: 1px solid #ccc;">
+            <!-- Top Control Bar -->
+            <div class="theater-top-bar">
+                <button id="btn-theater-back" class="theater-back-btn">← Back to Catalog</button>
+                <div class="theater-title-info">
+                    <span id="theater-media-title">No Video Selected</span>
+                    <span id="theater-media-meta" style="font-size: 12px; color: #888; margin-left: 10px;"></span>
+                </div>
+            </div>
+            
+            <!-- Main Content Area: Player Screen & Sidebar Control Panel -->
+            <div class="theater-main">
+                <!-- Left: Full player viewport -->
+                <div class="theater-player-container">
+                    <div class="player-screen" id="player-screen-area">
                         <div class="no-media-screen" style="text-align: center; color: #777;">
                             <h3>No Stream Loaded</h3>
                             <p>Select any item from the lists to load stream links.</p>
                         </div>
                     </div>
-
-                    <!-- Server Selection Card -->
-                    <div id="server-card-wrapper" style="margin-top: 20px; border: 1px solid #ccc; padding: 15px; background: #fafafa; display: none;">
-                        <strong>Select Stream Gateway:</strong>
-                        <div id="player-diagnostics" style="display: none; border: 1px dashed #ccc; padding: 10px; font-family: monospace; font-size: 11px; background: #fcfcfc; margin: 10px 0; max-height: 120px; overflow-y: auto; white-space: pre-wrap;"></div>
-                        <div id="server-grid-container" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
-                            <!-- Server buttons -->
+                </div>
+                
+                <!-- Right: Control Panel (Servers, TV Navigation, Details, Logs) -->
+                <div class="theater-control-panel">
+                    <!-- Episode Selector for TV Shows -->
+                    <div id="sidebar-tv-navigator" class="panel-section" style="display: none;">
+                        <strong>Episode Navigator</strong>
+                        <div class="panel-row" style="margin-top: 5px; display: flex; gap: 10px; align-items: center;">
+                            <div>
+                                S: <input id="player-season-input" type="number" value="1" min="1" style="width: 50px; background: #222; color: #fff; border: 1px solid #444; padding: 4px; border-radius: 4px;">
+                            </div>
+                            <div>
+                                E: <input id="player-episode-input" type="number" value="1" min="1" style="width: 50px; background: #222; color: #fff; border: 1px solid #444; padding: 4px; border-radius: 4px;">
+                            </div>
+                            <button id="player-tv-go-btn" style="background: #0000ee; color: #fff; border: none; padding: 4px 10px; cursor: pointer; font-weight: bold; border-radius: 4px;">Go</button>
                         </div>
                     </div>
-                </div>
 
-                <!-- Right: Metadata & Navigation sidebar -->
-                <div class="watch-sidebar" style="width: 280px; flex-shrink: 0; display: flex; flex-direction: column; gap: 15px;">
+                    <!-- Server Selection Card -->
+                    <div id="server-card-wrapper" class="panel-section" style="display: none;">
+                        <strong>Streaming Channels</strong>
+                        <div id="server-grid-container" style="margin-top: 8px;">
+                            <!-- Server buttons dynamic -->
+                        </div>
+                    </div>
+
                     <!-- Media Details Card -->
-                    <div style="border: 1px solid #ccc; padding: 15px; background: #fafafa;">
-                        <div id="player-media-details">
+                    <div class="panel-section">
+                        <strong>About Title</strong>
+                        <div id="player-media-details" style="font-size: 13px; color: #ccc; max-height: 150px; overflow-y: auto; margin-top: 5px;">
                             <h3>No Video Selected</h3>
                             <p>Browse listings and choose a title to play.</p>
                         </div>
-                    </div>
-
-                    <!-- Episode Selector for TV Shows -->
-                    <div id="sidebar-tv-navigator" style="border: 1px solid #ccc; padding: 15px; background: #fafafa; display: none;">
-                        <strong>Episode Navigator:</strong>
-                        <div style="margin-top: 10px; display: flex; gap: 10px;">
-                            <div>
-                                Season: <input id="player-season-input" type="number" value="1" min="1" style="width: 50px; padding: 3px;">
-                            </div>
-                            <div>
-                                Episode: <input id="player-episode-input" type="number" value="1" min="1" style="width: 50px; padding: 3px;">
-                            </div>
+                        <div id="sidebar-actions-wrapper" style="display: none; margin-top: 8px;">
+                            <button id="btn-sidebar-fav" style="width: 100%; padding: 6px; cursor: pointer; font-weight: bold; background: #222; color: #fff; border: 1px solid #444; border-radius: 4px;">⭐ Add Favorite</button>
                         </div>
-                        <button id="player-tv-go-btn" style="margin-top: 12px; width: 100%; padding: 4px 8px; font-weight: bold; cursor: pointer;">Change Episode</button>
                     </div>
 
-                    <!-- Action buttons -->
-                    <div id="sidebar-actions-wrapper" style="display: none;">
-                        <button id="btn-sidebar-fav" style="width: 100%; padding: 6px; cursor: pointer; font-weight: bold;">⭐ Add Favorite</button>
+                    <!-- Scraper diagnostics log -->
+                    <div class="panel-section">
+                        <strong>Scraper Logs</strong>
+                        <div id="player-diagnostics" style="display: none; background: #000; border: 1px solid #222; padding: 10px; font-family: monospace; font-size: 11px; color: #00ff00; margin-top: 5px; max-height: 150px; overflow-y: auto; white-space: pre-wrap; border-radius: 4px;"></div>
                     </div>
                 </div>
             </div>

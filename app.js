@@ -21,6 +21,14 @@ document.addEventListener("DOMContentLoaded", () => {
     loadFavorites();
     setupModalEvents();
     
+    // Back to catalog button inside theater bar
+    const backBtn = document.getElementById("btn-theater-back");
+    if (backBtn) {
+        backBtn.addEventListener("click", () => {
+            window.location.hash = "#home";
+        });
+    }
+    
     // Handle URL Hash Routing
     handleRouting();
     window.addEventListener("hashchange", handleRouting);
@@ -178,6 +186,21 @@ async function loadAndPlayMedia(id, type, season = 1, episode = 1) {
         currentType = type;
         currentSeason = season;
         currentEpisode = episode;
+        
+        // Update top theater bar information
+        const titleText = data.title || data.name || "Unknown Title";
+        const titleEl = document.getElementById("theater-media-title");
+        if (titleEl) titleEl.textContent = titleText;
+        
+        const releaseDate = data.release_date || data.first_air_date || "";
+        const year = releaseDate ? releaseDate.substring(0, 4) : "N/A";
+        const rating = data.vote_average ? data.vote_average.toFixed(1) : "0.0";
+        let metaText = `${year} | ⭐ ${rating} / 10 | ${type.toUpperCase()}`;
+        if (type === "tv") {
+            metaText += ` | S${season} E${episode}`;
+        }
+        const metaEl = document.getElementById("theater-media-meta");
+        if (metaEl) metaEl.textContent = metaText;
         
         populatePlayerSidebar(currentMedia, currentType, currentSeason, currentEpisode);
         loadScrapedStream(currentMedia.id, currentType, currentSeason, currentEpisode);
@@ -536,7 +559,7 @@ function extractLinks(data) {
     return links;
 }
 
-// Load and Test Streams in Concurrency Batch of 4
+// Load and Test Streams in Concurrency Batch of 4 with On-Screen Logging
 async function loadScrapedStream(id, type, season, episode) {
     const screenArea = document.getElementById("player-screen-area");
     const serverCard = document.getElementById("server-card-wrapper");
@@ -550,12 +573,13 @@ async function loadScrapedStream(id, type, season, episode) {
         window.activeHlsInstance = null;
     }
     
-    // Show premium Loading Spinner and message in the Player area
+    // Show premium Loading Spinner and Terminal log directly in the Player viewport
     screenArea.innerHTML = `
-        <div class="loading-screen" style="text-align: center; color: #fff; font-family: Arial, sans-serif;">
-            <div class="spinner" style="border: 4px solid rgba(255,255,255,0.1); width: 40px; height: 40px; border-radius: 50%; border-left-color: #0000ee; animation: spin 1s linear infinite; margin: 0 auto 15px;"></div>
-            <h3>Scraping Streaming Channels...</h3>
-            <p style="font-size: 13px; color: #aaa;">Querying open indexers in parallel</p>
+        <div class="loading-screen" style="text-align: center; color: #fff; font-family: Arial, sans-serif; max-width: 85%; width: 520px; display: flex; flex-direction: column; align-items: center;">
+            <div class="spinner" style="border: 4px solid rgba(255,255,255,0.1); width: 45px; height: 45px; border-radius: 50%; border-left-color: #0000ee; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
+            <h3 style="margin: 0 0 10px 0;">Searching Streaming Gateways...</h3>
+            <p style="font-size: 13px; color: #aaa; margin: 0 0 15px 0;">Resolving providers and testing latency</p>
+            <div id="on-screen-log" style="width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.6); border: 1px solid #262626; border-radius: 6px; padding: 12px; font-family: monospace; font-size: 11px; text-align: left; height: 160px; overflow-y: auto; color: #00ff00; white-space: pre-wrap; line-height: 1.4;">Querying parallel scraper pipeline...</div>
         </div>
     `;
     
@@ -565,6 +589,18 @@ async function loadScrapedStream(id, type, season, episode) {
     diagnostics.style.display = "block";
     diagnostics.innerHTML = `Querying parallel scraper pipeline for ID ${id} (${type.toUpperCase()} S${season}E${episode})...`;
     activeStreams = [];
+    
+    // Helper to log both to sidebar diagnostics and to the player's on-screen console
+    const appendLog = (msg) => {
+        diagnostics.innerHTML += `\n${msg}`;
+        diagnostics.scrollTop = diagnostics.scrollHeight;
+        
+        const onScreenLog = document.getElementById("on-screen-log");
+        if (onScreenLog) {
+            onScreenLog.innerHTML += `\n${msg}`;
+            onScreenLog.scrollTop = onScreenLog.scrollHeight;
+        }
+    };
     
     const tvNavigator = document.getElementById("sidebar-tv-navigator");
     if (type === "tv") {
@@ -580,7 +616,7 @@ async function loadScrapedStream(id, type, season, episode) {
         const data = await response.json();
         
         if (data.error) {
-            diagnostics.innerHTML += `\nError: ${data.error}`;
+            appendLog(`Error: ${data.error}`);
             screenArea.innerHTML = `<div class="status-msg" style="color:red;">Scraper Error: ${data.error}</div>`;
             serverCard.style.display = "none";
             return;
@@ -589,13 +625,13 @@ async function loadScrapedStream(id, type, season, episode) {
         activeStreams = extractLinks(data);
         
         if (activeStreams.length === 0) {
-            diagnostics.innerHTML += `\nNo active feeds returned.`;
+            appendLog(`No active feeds returned.`);
             screenArea.innerHTML = `<div class="status-msg">No streaming feeds could be found.</div>`;
             serverCard.style.display = "none";
             return;
         }
         
-        diagnostics.innerHTML += `\nSuccess: Resolved ${activeStreams.length} stream links. Testing latencies (concurrency limit: 4, timeout: 5s)...`;
+        appendLog(`Success: Resolved ${activeStreams.length} stream links. Testing latencies (concurrency limit: 4, timeout: 5s)...`);
         serverGrid.innerHTML = ""; // Clear loading indicators
         
         // Render initial server buttons
@@ -648,18 +684,17 @@ async function loadScrapedStream(id, type, season, episode) {
                     else if (latency >= 800) latencyClass = "latency-poor";
                     
                     if (latencyBadge) latencyBadge.innerHTML = `<span class="${latencyClass}">${latency}ms</span>`;
-                    diagnostics.innerHTML += `\n[${stream.displayName}] OK: ${latency}ms`;
+                    appendLog(`[${stream.displayName}] OK: ${latency}ms`);
                 } else {
                     stream.latency = 99999;
                     if (latencyBadge) latencyBadge.innerHTML = `<span class="latency-poor">Offline</span>`;
-                    diagnostics.innerHTML += `\n[${stream.displayName}] Failed: HTTP ${resp.status}`;
+                    appendLog(`[${stream.displayName}] Failed: HTTP ${resp.status}`);
                 }
             } catch (err) {
                 stream.latency = 99999;
                 if (latencyBadge) latencyBadge.innerHTML = `<span class="latency-poor">Timeout</span>`;
-                diagnostics.innerHTML += `\n[${stream.displayName}] Failed: Timeout`;
+                appendLog(`[${stream.displayName}] Failed: Timeout`);
             }
-            diagnostics.scrollTop = diagnostics.scrollHeight;
         };
         
         // Execute the pings in a sliding worker pool of concurrency limit 4
@@ -688,11 +723,11 @@ async function loadScrapedStream(id, type, season, episode) {
         if (fastestBtn) fastestBtn.classList.add("active");
         
         if (lowestLatency === 99999) {
-            diagnostics.innerHTML += `\nAll gateways offline. Connecting mirror 1...`;
+            appendLog(`All gateways offline. Connecting mirror 1...`);
             await new Promise(r => setTimeout(r, 800));
             playScrapedFeed(0);
         } else {
-            diagnostics.innerHTML += `\nConnecting to Channel ${fastestIndex + 1} (${lowestLatency}ms)...`;
+            appendLog(`Connecting to Channel ${fastestIndex + 1} (${lowestLatency}ms)...`);
             await new Promise(r => setTimeout(r, 800));
             playScrapedFeed(fastestIndex);
         }
@@ -703,7 +738,7 @@ async function loadScrapedStream(id, type, season, episode) {
         
     } catch (err) {
         console.error(err);
-        diagnostics.innerHTML += `\nAPI Error: ${err.message}`;
+        appendLog(`API Error: ${err.message}`);
         screenArea.innerHTML = `<div class="status-msg" style="color:red;">Error: ${err.message}</div>`;
     }
 }
