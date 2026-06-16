@@ -445,7 +445,7 @@ async function tryCinemaOS(tmdbId, mediaType = "movie", season = 1, episode = 1)
                     if (sUrl) {
                         results.push({
                             url: sUrl,
-                            title: s.name || "CinemaOS V2",
+                            title: `CinemaOS (${s.name || "V2"})`,
                             quality: s.quality || "unknown",
                             headers: s.headers || {}
                         });

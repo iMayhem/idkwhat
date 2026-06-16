@@ -369,7 +369,7 @@ def try_cinemaos(tmdb_id, media_type="movie", season=1, episode=1):
                         if s_url:
                             merged_results["sources"].append({
                                 "url": s_url,
-                                "title": s.get("name") or "CinemaOS V2",
+                                "title": f"CinemaOS ({s.get('name') or 'V2'})",
                                 "quality": s.get("quality") or "unknown",
                                 "headers": s.get("headers") or {}
                             })
