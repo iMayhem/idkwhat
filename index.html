@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CineWave - Academic Movie Database</title>
+    <link rel="stylesheet" href="index.css">
+    <!-- HLS.js for M3U8 streaming -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+</head>
+<body>
+
+    <header>
+        <div class="logo-container" id="logo-btn">
+            <span class="logo-text">CineWave Database</span>
+        </div>
+        
+        <nav>
+            <span class="nav-link active" id="menu-home">Home</span>
+            <span class="nav-link" id="menu-watch">Player</span>
+            <span class="nav-link" id="menu-favorites">Favorites</span>
+            <span class="nav-link" id="menu-about">About</span>
+        </nav>
+        
+        <div class="header-actions">
+            Search: 
+            <input type="text" id="header-search-input" placeholder="Enter title (e.g. Inception)..." style="width: 280px; padding: 4px;">
+        </div>
+    </header>
+
+    <main>
+        
+        <!-- Home Section -->
+        <section id="sec-home" class="content-section">
+            <p>
+                Welcome to <strong>CineWave</strong>, a minimalist academic index and streaming gateway for movies and TV series. This platform queries the TMDB database, scrapes open indexers in parallel, tests response latency, and streams using your browser's native HLS capabilities.
+            </p>
+
+            <!-- Featured Title -->
+            <div id="featured-movie" style="border: 1px solid #cccccc; padding: 15px; margin-bottom: 25px; background: #fafafa; display: flex; gap: 20px;">
+                <img id="featured-poster" style="width: 110px; height: 165px; object-fit: cover; border: 1px solid #ccc;" src="" alt="Featured Poster">
+                <div>
+                    <h3 id="featured-title" style="margin-top: 0; border: none; padding-bottom: 0;">Featured Title</h3>
+                    <p id="featured-meta" style="font-style: italic; color: #555; font-size: 13px; margin-bottom: 8px;"></p>
+                    <p id="featured-desc" style="font-size: 13px; line-height: 1.5; margin-bottom: 12px;"></p>
+                    <button id="hero-play-btn" style="padding: 4px 10px; font-weight: bold; cursor: pointer;">Play Stream</button>
+                </div>
+            </div>
+
+            <!-- Category Rows -->
+            <div class="category-row">
+                <h2>Trending Today</h2>
+                <div class="movie-carousel" id="trending-carousel">
+                    <!-- Dynamic cards -->
+                </div>
+            </div>
+
+            <div class="category-row">
+                <h2>Action & Adventure</h2>
+                <div class="movie-carousel" id="action-carousel">
+                    <!-- Dynamic cards -->
+                </div>
+            </div>
+
+            <div class="category-row">
+                <h2>Comedy Hits</h2>
+                <div class="movie-carousel" id="comedy-carousel">
+                    <!-- Dynamic cards -->
+                </div>
+            </div>
+
+            <div class="category-row">
+                <h2>Sci-Fi & Fantasy</h2>
+                <div class="movie-carousel" id="scifi-carousel">
+                    <!-- Dynamic cards -->
+                </div>
+            </div>
+
+            <div class="category-row">
+                <h2>Popular TV Series</h2>
+                <div class="movie-carousel" id="tv-carousel">
+                    <!-- Dynamic cards -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Search Results Section -->
+        <section id="sec-search" class="content-section hidden">
+            <h2 id="search-query-title">Search Results</h2>
+            <div class="movie-grid" id="search-results-grid">
+                <div class="status-msg">Type in the header search input and press Enter to query the database.</div>
+            </div>
+        </section>
+
+        <!-- Watch / Player Section -->
+        <section id="sec-watch" class="content-section hidden">
+            <div class="watch-container" style="display: flex; gap: 30px; flex-wrap: wrap; margin-top: 15px;">
+                <!-- Left: Native Video Player and Servers list -->
+                <div class="player-column" style="flex: 1; min-width: 350px;">
+                    <div class="player-screen" id="player-screen-area" style="background: #000; aspect-ratio: 16/9; display: flex; justify-content: center; align-items: center; border: 1px solid #ccc;">
+                        <div class="no-media-screen" style="text-align: center; color: #777;">
+                            <h3>No Stream Loaded</h3>
+                            <p>Select any item from the lists to load stream links.</p>
+                        </div>
+                    </div>
+
+                    <!-- Server Selection Card -->
+                    <div id="server-card-wrapper" style="margin-top: 20px; border: 1px solid #ccc; padding: 15px; background: #fafafa; display: none;">
+                        <strong>Select Stream Gateway:</strong>
+                        <div id="player-diagnostics" style="display: none; border: 1px dashed #ccc; padding: 10px; font-family: monospace; font-size: 11px; background: #fcfcfc; margin: 10px 0; max-height: 120px; overflow-y: auto; white-space: pre-wrap;"></div>
+                        <div id="server-grid-container" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+                            <!-- Server buttons -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Metadata & Navigation sidebar -->
+                <div class="watch-sidebar" style="width: 280px; flex-shrink: 0; display: flex; flex-direction: column; gap: 15px;">
+                    <!-- Media Details Card -->
+                    <div style="border: 1px solid #ccc; padding: 15px; background: #fafafa;">
+                        <div id="player-media-details">
+                            <h3>No Video Selected</h3>
+                            <p>Browse listings and choose a title to play.</p>
+                        </div>
+                    </div>
+
+                    <!-- Episode Selector for TV Shows -->
+                    <div id="sidebar-tv-navigator" style="border: 1px solid #ccc; padding: 15px; background: #fafafa; display: none;">
+                        <strong>Episode Navigator:</strong>
+                        <div style="margin-top: 10px; display: flex; gap: 10px;">
+                            <div>
+                                Season: <input id="player-season-input" type="number" value="1" min="1" style="width: 50px; padding: 3px;">
+                            </div>
+                            <div>
+                                Episode: <input id="player-episode-input" type="number" value="1" min="1" style="width: 50px; padding: 3px;">
+                            </div>
+                        </div>
+                        <button id="player-tv-go-btn" style="margin-top: 12px; width: 100%; padding: 4px 8px; font-weight: bold; cursor: pointer;">Change Episode</button>
+                    </div>
+
+                    <!-- Action buttons -->
+                    <div id="sidebar-actions-wrapper" style="display: none;">
+                        <button id="btn-sidebar-fav" style="width: 100%; padding: 6px; cursor: pointer; font-weight: bold;">⭐ Add Favorite</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Favorites Section -->
+        <section id="sec-favorites" class="content-section hidden">
+            <h2>Your Favorites</h2>
+            <p>Saved titles are stored locally in your browser memory for immediate play.</p>
+            <div class="movie-grid" id="favorites-grid">
+                <div class="status-msg">Your favorites list is currently empty.</div>
+            </div>
+        </section>
+
+        <!-- About Section -->
+        <section id="sec-about" class="content-section hidden">
+            <h2>About CineWave</h2>
+            <p>
+                This index site provides an academic portal linking directly to public streaming servers for personal viewing. The site features:
+            </p>
+            <ul>
+                <li>Parallel indexer queries targeting TMDB identifiers.</li>
+                <li>Real-time automated link validation and ping checks.</li>
+                <li>Deduplicated outputs resulting in fast connections.</li>
+            </ul>
+            <p>
+                Credits: Built with raw Javascript, standard Hls.js library, and standard CSS styles inspired by commutative.space.
+            </p>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <p>CineWave Academic Database Engine &copy; 2026. All rights reserved.</p>
+    </footer>
+
+    <!-- Movie Details Modal -->
+    <div id="movie-modal" class="modal hidden">
+        <div class="modal-content-wrapper">
+            <div class="modal-header">
+                <h3 id="modal-title-bar">Details</h3>
+                <button class="modal-close-btn close-modal-btn">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-content-area">
+                <!-- Dynamic Content -->
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
