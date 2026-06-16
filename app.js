@@ -112,19 +112,32 @@ async function handleRouting() {
     const hash = window.location.hash;
     
     if (!hash || hash === "#" || hash === "#home") {
+        stopVideoPlayback();
         showSection("home");
         return;
     }
     if (hash === "#favorites") {
+        stopVideoPlayback();
         showSection("favorites");
         return;
     }
     if (hash === "#about") {
+        stopVideoPlayback();
         showSection("about");
         return;
     }
     if (hash === "#watch") {
         showSection("watch");
+        return;
+    }
+    if (hash.startsWith("#/search")) {
+        stopVideoPlayback();
+        showSection("search");
+        const match = hash.match(/#\/search\?q=(.*)/);
+        const query = match ? decodeURIComponent(match[1]) : "";
+        if (query) {
+            executeSearch(query);
+        }
         return;
     }
     
@@ -137,6 +150,7 @@ async function handleRouting() {
         const episode = match[4] ? parseInt(match[4]) : 1;
         await loadAndPlayMedia(id, type, season, episode);
     } else {
+        stopVideoPlayback();
         showSection("home");
     }
 }
@@ -267,68 +281,12 @@ function createMovieCard(item, type) {
 // Search
 function setupSearch() {
     const searchInput = document.getElementById("header-search-input");
-    const resultsGrid = document.getElementById("search-results-grid");
-    const searchSection = document.getElementById("sec-search");
-    const sections = {
-        home: document.getElementById("sec-home"),
-        watch: document.getElementById("sec-watch"),
-        favorites: document.getElementById("sec-favorites"),
-        about: document.getElementById("sec-about"),
-        search: searchSection
-    };
     
-    searchInput.addEventListener("keypress", async (e) => {
+    searchInput.addEventListener("keypress", (e) => {
         if (e.key === "Enter") {
             const query = searchInput.value.trim();
             if (!query) return;
-            
-            // Visual Navigation
-            document.querySelectorAll("nav .nav-link").forEach(m => m.classList.remove("active"));
-            
-            // Switch Section
-            Object.keys(sections).forEach(secKey => {
-                if (secKey === "search") {
-                    sections[secKey].classList.remove("hidden");
-                } else {
-                    sections[secKey].classList.add("hidden");
-                }
-            });
-            
-            document.getElementById("search-query-title").textContent = `Search Results for "${query}"`;
-            resultsGrid.innerHTML = `<div class="loading-indicator">Searching database...</div>`;
-            
-            try {
-                const [movieResp, tvResp] = await Promise.all([
-                    fetch(`${BASE_URL}/search/movie?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}`),
-                    fetch(`${BASE_URL}/search/tv?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}`)
-                ]);
-                
-                if (!movieResp.ok || !tvResp.ok) throw new Error("Search failed");
-                
-                const movieData = await movieResp.json();
-                const tvData = await tvResp.json();
-                
-                resultsGrid.innerHTML = "";
-                
-                const combined = [
-                    ...movieData.results.map(item => ({ ...item, mediaType: "movie" })),
-                    ...tvData.results.map(item => ({ ...item, mediaType: "tv" }))
-                ];
-                combined.sort((a, b) => b.popularity - a.popularity);
-                
-                if (combined.length === 0) {
-                    resultsGrid.innerHTML = `<div class="status-msg">No results found for "${query}".</div>`;
-                    return;
-                }
-                
-                combined.forEach(item => {
-                    const card = createMovieCard(item, item.mediaType);
-                    resultsGrid.appendChild(card);
-                });
-            } catch (err) {
-                console.error(err);
-                resultsGrid.innerHTML = `<div class="status-msg" style="color: var(--error);">Error executing query.</div>`;
-            }
+            window.location.hash = `#/search?q=${encodeURIComponent(query)}`;
         }
     });
 }
@@ -814,4 +772,78 @@ async function pool(limit, array, fn) {
         }
     }
     return Promise.all(promises);
+}
+
+// Stop Video Playback & Clean Stream Resources
+function stopVideoPlayback() {
+    if (window.activeHlsInstance) {
+        try {
+            window.activeHlsInstance.destroy();
+        } catch(e) {}
+        window.activeHlsInstance = null;
+    }
+    const video = document.getElementById("custom-html5-player");
+    if (video) {
+        try {
+            video.pause();
+            video.src = "";
+            video.load();
+        } catch(e) {}
+    }
+    const screenArea = document.getElementById("player-screen-area");
+    if (screenArea) {
+        screenArea.innerHTML = `
+            <div class="no-media-screen" style="text-align: center; color: #777;">
+                <h3>No Stream Loaded</h3>
+                <p>Select any item from the lists to load stream links.</p>
+            </div>
+        `;
+    }
+    const serverCard = document.getElementById("server-card-wrapper");
+    if (serverCard) {
+        serverCard.style.display = "none";
+    }
+}
+
+// Execute route-driven TMDB Search query
+async function executeSearch(query) {
+    const searchInput = document.getElementById("header-search-input");
+    const resultsGrid = document.getElementById("search-results-grid");
+    
+    searchInput.value = query;
+    document.getElementById("search-query-title").textContent = `Search Results for "${query}"`;
+    resultsGrid.innerHTML = `<div class="loading-indicator">Searching database...</div>`;
+    
+    try {
+        const [movieResp, tvResp] = await Promise.all([
+            fetch(`${BASE_URL}/search/movie?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}`),
+            fetch(`${BASE_URL}/search/tv?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}`)
+        ]);
+        
+        if (!movieResp.ok || !tvResp.ok) throw new Error("Search failed");
+        
+        const movieData = await movieResp.json();
+        const tvData = await tvResp.json();
+        
+        resultsGrid.innerHTML = "";
+        
+        const combined = [
+            ...movieData.results.map(item => ({ ...item, mediaType: "movie" })),
+            ...tvData.results.map(item => ({ ...item, mediaType: "tv" }))
+        ];
+        combined.sort((a, b) => b.popularity - a.popularity);
+        
+        if (combined.length === 0) {
+            resultsGrid.innerHTML = `<div class="status-msg">No results found for "${query}".</div>`;
+            return;
+        }
+        
+        combined.forEach(item => {
+            const card = createMovieCard(item, item.mediaType);
+            resultsGrid.appendChild(card);
+        });
+    } catch (err) {
+        console.error(err);
+        resultsGrid.innerHTML = `<div class="status-msg" style="color: var(--error);">Error executing query.</div>`;
+    }
 }
