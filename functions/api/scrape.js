@@ -319,7 +319,7 @@ async function tryVidSrcFamily(tmdbId, mediaType = "movie", season = 1, episode 
             if (!resp.ok) return;
             const html = await resp.text();
             
-            const matches = html.match(/https?:\/\/[^\s"\'<>\]]+\.m3u8[^\s"\'<>]+/g);
+            const matches = html.match(/https?:\/\/[^\s"\'<>\]]+\.m3u8[^\s"\'<>]*/g);
             if (matches) {
                 const domain = new URL(url).hostname;
                 matches.forEach(m => {
@@ -368,7 +368,7 @@ async function tryOtherProviders(tmdbId, mediaType = "movie", season = 1, episod
             }, 5000);
             if (!resp.ok) return;
             const html = await resp.text();
-            const matches = html.match(/https?:\/\/[^\s"\'<>]+\.m3u8[^\s"\'<>]+/g);
+            const matches = html.match(/https?:\/\/[^\s"\'<>]+\.m3u8[^\s"\'<>]*/g);
             if (matches) {
                 const domain = new URL(url).hostname;
                 matches.forEach(m => {
