@@ -359,34 +359,39 @@ def try_cinemaos(tmdb_id, media_type="movie", season=1, episode=1):
     
     for url, endpoint_type in urls:
         req = urllib.request.Request(url, headers=headers)
-        try:
-            with urllib.request.urlopen(req, timeout=5) as resp:
-                data = resp.read().decode('utf-8')
-                j = json.loads(data)
-                if endpoint_type == "cinemaosv2" and "streams" in j:
-                    for s in j["streams"]:
-                        s_url = s.get("url") or s.get("link")
-                        if s_url:
-                            merged_results["sources"].append({
-                                "url": s_url,
-                                "title": f"CinemaOS ({s.get('name') or 'V2'})",
-                                "quality": s.get("quality") or "unknown",
-                                "headers": s.get("headers") or {}
-                            })
-                elif endpoint_type == "multi-movies" and "results" in j:
-                    for s in j["results"]:
-                        s_url = s.get("link")
-                        if s_url:
-                            source_name = s.get("source") or "MultiMovies"
-                            quality = s.get("quality") or "HD"
-                            merged_results["sources"].append({
-                                "url": s_url,
-                                "title": f"CinemaOS ({source_name})",
-                                "quality": quality,
-                                "headers": {}
-                            })
-        except Exception as e:
-            print(f"  ❌ [CinemaOS] {endpoint_type} failed: {e}")
+        for attempt in range(3):
+            try:
+                with urllib.request.urlopen(req, timeout=5) as resp:
+                    data = resp.read().decode('utf-8')
+                    j = json.loads(data)
+                    if endpoint_type == "cinemaosv2" and "streams" in j:
+                        for s in j["streams"]:
+                            s_url = s.get("url") or s.get("link")
+                            if s_url:
+                                merged_results["sources"].append({
+                                    "url": s_url,
+                                    "title": f"CinemaOS ({s.get('name') or 'V2'})",
+                                    "quality": s.get("quality") or "unknown",
+                                    "headers": s.get("headers") or {}
+                                })
+                    elif endpoint_type == "multi-movies" and "results" in j:
+                        for s in j["results"]:
+                            s_url = s.get("link")
+                            if s_url:
+                                source_name = s.get("source") or "MultiMovies"
+                                quality = s.get("quality") or "HD"
+                                merged_results["sources"].append({
+                                    "url": s_url,
+                                    "title": f"CinemaOS ({source_name})",
+                                    "quality": quality,
+                                    "headers": {}
+                                })
+                    break
+            except Exception as e:
+                if attempt < 2:
+                    time.sleep(1)
+                    continue
+                print(f"  ❌ [CinemaOS] {endpoint_type} failed: {e}")
             
     if merged_results["sources"]:
         print(f"  ✅ [CinemaOS] Found {len(merged_results['sources'])} streams")

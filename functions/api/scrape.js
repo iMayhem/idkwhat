@@ -423,51 +423,64 @@ async function tryCinemaOS(tmdbId, mediaType = "movie", season = 1, episode = 1)
     
     const results = [];
     const promises = urls.map(async ({ url, type }) => {
-        try {
-            const resp = await fetchWithTimeout(url, {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
-                    'Referer': `https://cinemaos.live/${mediaType}/watch/${tmdbId}`
-                }
-            }, 5000);
-            if (!resp.ok) return;
-            const text = await resp.text();
-            let j;
+        for (let attempt = 0; attempt < 3; attempt++) {
             try {
-                j = JSON.parse(text);
-            } catch(e) {
-                return;
-            }
-            
-            if (type === 'cinemaosv2' && j.streams && Array.isArray(j.streams)) {
-                j.streams.forEach(s => {
-                    const sUrl = s.url || s.link;
-                    if (sUrl) {
-                        results.push({
-                            url: sUrl,
-                            title: `CinemaOS (${s.name || "V2"})`,
-                            quality: s.quality || "unknown",
-                            headers: s.headers || {}
-                        });
+                const resp = await fetchWithTimeout(url, {
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
+                        'Referer': `https://cinemaos.live/${mediaType}/watch/${tmdbId}`
                     }
-                });
-            } else if (type === 'multi-movies' && j.results && Array.isArray(j.results)) {
-                j.results.forEach(s => {
-                    const sUrl = s.link;
-                    if (sUrl) {
-                        const sourceName = s.source || "MultiMovies";
-                        const quality = s.quality || "HD";
-                        results.push({
-                            url: sUrl,
-                            title: `CinemaOS (${sourceName})`,
-                            quality: quality,
-                            headers: {}
-                        });
+                }, 5000);
+                if (!resp.ok) {
+                    if (attempt < 2) {
+                        await new Promise(r => setTimeout(r, 1000));
+                        continue;
                     }
-                });
+                    return;
+                }
+                const text = await resp.text();
+                let j;
+                try {
+                    j = JSON.parse(text);
+                } catch(e) {
+                    return;
+                }
+                
+                if (type === 'cinemaosv2' && j.streams && Array.isArray(j.streams)) {
+                    j.streams.forEach(s => {
+                        const sUrl = s.url || s.link;
+                        if (sUrl) {
+                            results.push({
+                                url: sUrl,
+                                title: `CinemaOS (${s.name || "V2"})`,
+                                quality: s.quality || "unknown",
+                                headers: s.headers || {}
+                            });
+                        }
+                    });
+                } else if (type === 'multi-movies' && j.results && Array.isArray(j.results)) {
+                    j.results.forEach(s => {
+                        const sUrl = s.link;
+                        if (sUrl) {
+                            const sourceName = s.source || "MultiMovies";
+                            const quality = s.quality || "HD";
+                            results.push({
+                                url: sUrl,
+                                title: `CinemaOS (${sourceName})`,
+                                quality: quality,
+                                headers: {}
+                            });
+                        }
+                    });
+                }
+                break;
+            } catch (e) {
+                if (attempt < 2) {
+                    await new Promise(r => setTimeout(r, 1000));
+                    continue;
+                }
+                console.error(`CinemaOS endpoint ${type} failed:`, e);
             }
-        } catch (e) {
-            console.error(`CinemaOS endpoint ${type} failed:`, e);
         }
     });
     
