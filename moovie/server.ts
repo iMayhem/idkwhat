@@ -207,7 +207,7 @@ async function tryPeachify(tmdbId: number, mediaType = "movie", season = 1, epis
     { label: "Wolf", path: "air", apis: ["https://usa.eat-peach.sbs", "https://proxy-6.eat-peach.sbs"] },
     { label: "Multi", path: "multi", apis: ["https://usa.eat-peach.sbs", "https://proxy-6.eat-peach.sbs"] },
     { label: "Dark", path: "net", apis: ["https://uwu.eat-peach.sbs", "https://proxy-6.eat-peach.sbs"] },
-    { label: "Some Sweet", path: "sweet", apis: ["https://usa.eat-peach.sbs", "https://proxy-6.eat-peach.sbs"] }
+    { label: "Rasmalai", path: "rasmalai", apis: ["https://usa.eat-peach.sbs", "https://proxy-6.eat-peach.sbs"] }
   ];
   
   const urls: { url: string; label: string }[] = [];
