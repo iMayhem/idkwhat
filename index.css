@@ -28,6 +28,10 @@ body {
     margin: 0;
 }
 
+.hidden {
+    display: none !important;
+}
+
 /* Custom Scrollbars */
 ::-webkit-scrollbar {
     width: 8px;
