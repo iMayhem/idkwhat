@@ -224,7 +224,8 @@ def try_peachify(tmdb_id, media_type="movie", season=1, episode=1):
         {"label": "Spider", "path": "holly", "apis": ["https://usa.eat-peach.sbs", "https://proxy-6.eat-peach.sbs"]},
         {"label": "Wolf", "path": "air", "apis": ["https://usa.eat-peach.sbs", "https://proxy-6.eat-peach.sbs"]},
         {"label": "Multi", "path": "multi", "apis": ["https://usa.eat-peach.sbs", "https://proxy-6.eat-peach.sbs"]},
-        {"label": "Dark", "path": "net", "apis": ["https://uwu.eat-peach.sbs", "https://proxy-6.eat-peach.sbs"]}
+        {"label": "Dark", "path": "net", "apis": ["https://uwu.eat-peach.sbs", "https://proxy-6.eat-peach.sbs"]},
+        {"label": "Some Sweet", "path": "sweet", "apis": ["https://usa.eat-peach.sbs", "https://proxy-6.eat-peach.sbs"]}
     ]
     
     urls_to_fetch = []

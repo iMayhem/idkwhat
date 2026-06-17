@@ -4,6 +4,11 @@ import {
   Play, Pause, Volume2, RotateCcw, Monitor, Waves, Cpu, Sparkles, Languages, Info, ArrowLeft, Maximize, SkipForward, HelpCircle
 } from "lucide-react";
 
+function adjustedAlphaHex(hex: string, alpha: string): string {
+  if (!hex) return "";
+  return hex.startsWith("#") ? `${hex}${alpha}` : `#${hex}${alpha}`;
+}
+
 interface QuantumPlayerProps {
   movie: Movie;
   settings: PlayerSettings;
