@@ -257,7 +257,16 @@ function setHeroFeature(item, type) {
     
     if (!banner || !item) return;
     
-    poster.src = item.poster_path ? `${IMAGE_BASE}${item.poster_path}` : "";
+    const backdropSrc = item.backdrop_path ? `https://image.tmdb.org/t/p/w1280${item.backdrop_path}` : "";
+    if (backdropSrc) {
+        banner.style.backgroundImage = `linear-gradient(to right, rgba(20, 20, 20, 0.95) 25%, rgba(20, 20, 20, 0.45) 55%, rgba(20, 20, 20, 0.95) 100%), url(${backdropSrc})`;
+        banner.style.backgroundSize = 'cover';
+        banner.style.backgroundPosition = 'center';
+    } else {
+        banner.style.backgroundImage = 'none';
+    }
+    
+    if (poster) poster.style.display = 'none';
     
     const itemTitle = item.title || item.name || "Featured Title";
     title.textContent = itemTitle;
