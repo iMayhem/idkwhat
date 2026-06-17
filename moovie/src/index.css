@@ -1,0 +1,115 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+}
+
+/* Custom interactive animations and effects */
+@layer utilities {
+  .text-shadow-xl {
+    text-shadow: 0 4px 12px rgba(0,0,0,0.95);
+  }
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(3, 3, 3, 0.5);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(229, 9, 20, 0.4);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(229, 9, 20, 0.65);
+}
+
+/* Dynamic slider and layouts override */
+body {
+  background-color: #030303;
+  color: #fff;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+/* Glow effects and matrices animations */
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+.aurora-glow-soft {
+  animation: pulseGlow 8s infinite ease-in-out;
+}
+
+@keyframes slide {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 0 100%;
+  }
+}
+
+/* Premium Cinematic entrance transitions */
+@keyframes cinemaEntrance {
+  0% {
+    opacity: 0;
+    filter: blur(25px) brightness(2.2) saturate(0.2);
+    transform: scale(1.04);
+  }
+  35% {
+    opacity: 0.85;
+    filter: blur(12px) brightness(1.5) saturate(0.8);
+    transform: scale(1.015);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0) brightness(1) saturate(1);
+    transform: scale(1);
+  }
+}
+
+.cinema-entrance {
+  animation: cinemaEntrance 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes riseUp {
+  0% {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cinema-stagger-1 {
+  animation: riseUp 1.3s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+}
+
+.cinema-stagger-2 {
+  animation: riseUp 1.3s cubic-bezier(0.16, 1, 0.3, 1) 0.45s both;
+}
+
+.cinema-stagger-3 {
+  animation: riseUp 1.5s cubic-bezier(0.16, 1, 0.3, 1) 0.65s both;
+}
+

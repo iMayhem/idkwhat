@@ -1,0 +1,6 @@
+{
+  "name": "Moovie",
+  "description": "Immersive 3D cinema discovery and streaming platform featuring real-time ambient lighting, customizable spatial sound, profile warping, and high-performance showcase layout.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
